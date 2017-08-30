@@ -19,9 +19,7 @@ auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_token_secret)
 
 es = Elasticsearch()
-
-csvFile = open('result.csv', 'a')
-csvWriter = csv.writer(csvFile)
+file = open('data.json','a')
 
 class StreamListener(tweepy.StreamListener):
     status_wrapper = TextWrapper(width=60, initial_indent='    ', subsequent_indent='    ')
@@ -30,31 +28,22 @@ class StreamListener(tweepy.StreamListener):
         try:
             print '\n%s %s' % (status.author.screen_name, status.created_at)
             print status.text
-            
-            tweet = TextBlob(status.text)
-
+            tweet = status.text
             row=es.create(index="my-index", 
-                      doc_type="test-type", 
+                      doc_type="tweet", 
                       body={ "author": status.author.screen_name,
                              "date": status.created_at,
                              "message": status.text,
                              "polarity": tweet.sentiment.polarity,
                              "subjectivity": tweet.sentiment.subjectivity }
                      )
-            csvWriter.writerow(row)
+            json.dump(row._json, file, indent=4)
+            
 
 
         except Exception, e:
             pass
 
 streamer = tweepy.Stream(auth=auth, listener=StreamListener())
-
-#Fill with your own Keywords bellow
-#terms = ['intel','#edison', '#galileo']
-
-#myStreamListener = MyStreamListener()
-#myStream = tweepy.Stream(auth = auth, listener=myStreamListener)
-#myStream.filter(track=['Jon Snow'], async=True)
-
 streamer.filter(track=['Jon Snow'], async=True)
 
